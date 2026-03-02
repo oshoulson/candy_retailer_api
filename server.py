@@ -1,10 +1,50 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 import re
+import logging
+import time
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Candy Retailer Training API", version="1.0.0")
+
+# Middleware for logging all requests and responses
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+
+    # Log the incoming request
+    query_params = dict(request.query_params)
+    logger.info(f"Incoming {request.method} {request.url.path} - Params: {query_params}")
+
+    try:
+        response = await call_next(request)
+        process_time = time.time() - start_time
+
+        # Log the response
+        logger.info(
+            f"Response {request.method} {request.url.path} - "
+            f"Status: {response.status_code} - "
+            f"Duration: {process_time:.3f}s"
+        )
+
+        return response
+    except Exception as e:
+        process_time = time.time() - start_time
+        logger.error(
+            f"Error {request.method} {request.url.path} - "
+            f"Exception: {type(e).__name__}: {str(e)} - "
+            f"Duration: {process_time:.3f}s",
+            exc_info=True
+        )
+        raise
 
 # ---------- Models ----------
 class ErrorPayload(BaseModel):
@@ -242,6 +282,7 @@ seed_data()
 
 # ---------- Helpers ----------
 def err(status: int, code: str, message: str, details: Optional[dict] = None):
+    logger.warning(f"API Error - Status: {status}, Code: {code}, Message: {message}, Details: {details}")
     raise HTTPException(
         status_code=status,
         detail={"error": ErrorPayload(code=code, message=message, details=details).dict()},
