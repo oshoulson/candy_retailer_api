@@ -52,29 +52,27 @@ The API will be available at `http://localhost:8000`
 ## Endpoints
 
 ### GET /account
-Lookup a customer account by email or phone.
+Lookup a customer account by phone.
 
 **Parameters:**
-- `email` (optional): Customer email
-- `phone` (optional): Customer phone (any format)
+- `phone` (required): Customer phone (any format)
 
 **Example:**
 ```bash
-curl "http://localhost:8000/account?email=sarah.chen@email.com"
+curl "http://localhost:8000/account?phone=415-555-0101"
 ```
 
 ### GET /orders
 Retrieve orders by various criteria.
 
 **Parameters (choose one):**
-- `email`: Customer email
 - `phone`: Customer phone
 - `account_id`: Customer account ID
 - `order_id`: Specific order ID
 
 **Example:**
 ```bash
-curl "http://localhost:8000/orders?email=sarah.chen@email.com"
+curl "http://localhost:8000/orders?phone=415-555-0101"
 curl "http://localhost:8000/orders?order_id=ORD-5001"
 ```
 

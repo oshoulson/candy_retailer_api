@@ -37,7 +37,6 @@ class Order(BaseModel):
 ACCOUNTS: Dict[str, Account] = {}
 ORDERS: Dict[str, Order] = {}
 
-EMAIL_INDEX: Dict[str, str] = {}  # email -> account_id
 PHONE_INDEX: Dict[str, str] = {}  # last10 digits -> account_id
 
 
@@ -60,7 +59,6 @@ def create_dynamic_date(base_date: datetime, reference_date: datetime = datetime
 def add_account(account_id: str, name: str, email: str, phone: Optional[str] = None, loyalty_points: int = 0, tier: str = "Bronze") -> Account:
     acc = Account(account_id=account_id, name=name, email=email, phone=phone, loyalty_points=loyalty_points, tier=tier)
     ACCOUNTS[account_id] = acc
-    EMAIL_INDEX[email.lower()] = account_id
     if phone:
         PHONE_INDEX[normalize_phone(phone)] = account_id
     return acc
@@ -97,7 +95,6 @@ def seed_data():
     """
     ACCOUNTS.clear()
     ORDERS.clear()
-    EMAIL_INDEX.clear()
     PHONE_INDEX.clear()
 
     # ---- Accounts ----
@@ -251,16 +248,6 @@ def err(status: int, code: str, message: str, details: Optional[dict] = None):
     )
 
 
-def find_account_by_email(email: str) -> Account:
-    if not email:
-        err(400, "BAD_REQUEST", "Query parameter 'email' is required")
-    email_key = email.lower()
-    account_id = EMAIL_INDEX.get(email_key)
-    if not account_id:
-        err(404, "ACCOUNT_NOT_FOUND", f"No account for email {email}")
-    return ACCOUNTS[account_id]
-
-
 def find_account_by_phone(phone: str) -> Account:
     if not phone:
         err(400, "BAD_REQUEST", "Query parameter 'phone' is required")
@@ -275,31 +262,22 @@ def find_account_by_phone(phone: str) -> Account:
 
 # ---------- Endpoints ----------
 @app.get("/account", response_model=Account)
-async def get_account(email: Optional[str] = None, phone: Optional[str] = None):
-    if not email and not phone:
-        err(400, "BAD_REQUEST", "Provide either 'email' or 'phone'")
-    if email and phone:
-        err(400, "BAD_REQUEST", "Provide only one of: 'email' or 'phone'")
-
-    if email:
-        return find_account_by_email(email)
-    else:
-        return find_account_by_phone(phone)
+async def get_account(phone: str = Query(..., description="Phone number")):
+    return find_account_by_phone(phone)
 
 
 @app.get("/orders")
 async def get_orders(
-    email: Optional[str] = None,
     phone: Optional[str] = None,
     account_id: Optional[str] = None,
     order_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    provided_params = sum([bool(email), bool(phone), bool(account_id), bool(order_id)])
+    provided_params = sum([bool(phone), bool(account_id), bool(order_id)])
 
     if provided_params == 0:
-        err(400, "BAD_REQUEST", "Provide one of: 'email', 'phone', 'account_id', or 'order_id'")
+        err(400, "BAD_REQUEST", "Provide one of: 'phone', 'account_id', or 'order_id'")
     elif provided_params > 1:
-        err(400, "BAD_REQUEST", "Provide only one of: 'email', 'phone', 'account_id', or 'order_id'")
+        err(400, "BAD_REQUEST", "Provide only one of: 'phone', 'account_id', or 'order_id'")
 
     # Handle order_id lookup
     if order_id:
@@ -308,11 +286,8 @@ async def get_orders(
             err(404, "ORDER_NOT_FOUND", f"No order_id {order_id}")
         return {"orders": [order.__dict__]}
 
-    # Handle email, phone, or account_id lookup
-    if email:
-        account = find_account_by_email(email)
-        acct_id = account.account_id
-    elif phone:
+    # Handle phone or account_id lookup
+    if phone:
         account = find_account_by_phone(phone)
         acct_id = account.account_id
     else:

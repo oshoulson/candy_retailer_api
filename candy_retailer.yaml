@@ -7,19 +7,13 @@ servers:
 paths:
   /account:
     get:
-      summary: GetAccount by email or phone
+      summary: GetAccount by phone
       parameters:
-        - in: query
-          name: email
-          schema:
-            type: string
-          required: false
-          description: Customer email address
         - in: query
           name: phone
           schema:
             type: string
-          required: false
+          required: true
           description: Phone number (any format)
       responses:
         '200':
@@ -32,12 +26,8 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
   /orders:
     get:
-      summary: GetOrders by email, phone, account_id, or order_id
+      summary: GetOrders by phone, account_id, or order_id
       parameters:
-        - in: query
-          name: email
-          schema: { type: string }
-          required: false
         - in: query
           name: phone
           schema: { type: string }
