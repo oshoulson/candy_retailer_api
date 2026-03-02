@@ -26,12 +26,8 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
   /orders:
     get:
-      summary: GetOrders by phone, account_id, or order_id
+      summary: GetOrders by account_id or order_id
       parameters:
-        - in: query
-          name: phone
-          schema: { type: string }
-          required: false
         - in: query
           name: account_id
           schema: { type: string }

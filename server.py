@@ -268,16 +268,15 @@ async def get_account(phone: str = Query(..., description="Phone number")):
 
 @app.get("/orders")
 async def get_orders(
-    phone: Optional[str] = None,
     account_id: Optional[str] = None,
     order_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    provided_params = sum([bool(phone), bool(account_id), bool(order_id)])
+    provided_params = sum([bool(account_id), bool(order_id)])
 
     if provided_params == 0:
-        err(400, "BAD_REQUEST", "Provide one of: 'phone', 'account_id', or 'order_id'")
+        err(400, "BAD_REQUEST", "Provide one of: 'account_id' or 'order_id'")
     elif provided_params > 1:
-        err(400, "BAD_REQUEST", "Provide only one of: 'phone', 'account_id', or 'order_id'")
+        err(400, "BAD_REQUEST", "Provide only one of: 'account_id' or 'order_id'")
 
     # Handle order_id lookup
     if order_id:
@@ -286,14 +285,10 @@ async def get_orders(
             err(404, "ORDER_NOT_FOUND", f"No order_id {order_id}")
         return {"orders": [order.__dict__]}
 
-    # Handle phone or account_id lookup
-    if phone:
-        account = find_account_by_phone(phone)
-        acct_id = account.account_id
-    else:
-        acct_id = account_id
-        if acct_id not in ACCOUNTS:
-            err(404, "ACCOUNT_NOT_FOUND", f"No account_id {acct_id}")
+    # Handle account_id lookup
+    acct_id = account_id
+    if acct_id not in ACCOUNTS:
+        err(404, "ACCOUNT_NOT_FOUND", f"No account_id {acct_id}")
 
     items = [o for o in ORDERS.values() if o.account_id == acct_id]
     return {"orders": [o.__dict__ for o in items]}

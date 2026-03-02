@@ -63,16 +63,21 @@ curl "http://localhost:8000/account?phone=415-555-0101"
 ```
 
 ### GET /orders
-Retrieve orders by various criteria.
+Retrieve orders by account ID or order ID. Note: To get orders for a customer, you must first look up their account using `/account` to get the `account_id`.
 
 **Parameters (choose one):**
-- `phone`: Customer phone
-- `account_id`: Customer account ID
+- `account_id`: Customer account ID (obtained from `/account` endpoint)
 - `order_id`: Specific order ID
 
 **Example:**
 ```bash
-curl "http://localhost:8000/orders?phone=415-555-0101"
+# First, lookup account by phone to get account_id
+curl "http://localhost:8000/account?phone=415-555-0101"
+
+# Then use the account_id to get their orders
+curl "http://localhost:8000/orders?account_id=CUST-2001"
+
+# Or lookup a specific order directly
 curl "http://localhost:8000/orders?order_id=ORD-5001"
 ```
 
